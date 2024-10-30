@@ -1,67 +1,42 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				},
-				
-			],
 			contacts: [],
+			contactToEdit: null // Store the contact to be edited
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-			loadSomeData: () => {
-				/**
-					fetch().then().then(data => setStore({ "foo": data.bar }))
-				*/
-			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
-
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
-
-				//reset the global store
-				setStore({ demo: demo });
-			},
-
 			getContacts: async () => {
-				const resp = await fetch(process.env.BACKEND_URL+"agendas/eliseo/");
-				const data = await resp.json()
-				console.log(data);
-				setStore({contacts: data.contacts})
+				const resp = await fetch(process.env.BACKEND_URL + "agendas/eliseo/");
+				const data = await resp.json();
+				setStore({ contacts: data.contacts || data });
 			},
-			createContact: async(newContact) => {
-				const myHeaders = new Headers();
-				myHeaders.append("content-Type", "application/json");
-
-				const resp = await fetch(process.env.BACKEND_URL+"agendas/eliseo/contacts", {
+			createContact: async (newContact) => {
+				const resp = await fetch(process.env.BACKEND_URL + "agendas/eliseo/contacts", {
 					method: "POST",
-					headers: myHeaders,
-					body: JSON.stringify(newContact),
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(newContact)
 				});
-				if(resp.ok){
+				if (resp.ok) {
 					await getActions().getContacts();
 				}
-				const data = await resp.json()
-				console.log(data);
-				setStore({contacts: data.contacts})
+			},
+			editContact: async (updatedContact) => {
+				await fetch(process.env.BACKEND_URL + `agendas/eliseo/contacts/${updatedContact.id}`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(updatedContact)
+				});
+				getActions().getContacts();
+			},
+			deleteContact: async (id) => {
+				await fetch(process.env.BACKEND_URL + `agendas/eliseo/contacts/${id}`, { method: "DELETE" });
+				getActions().getContacts();
+			},
+			setContactToEdit: (contact) => {
+				setStore({ contactToEdit: contact });
+			},
+			clearContactToEdit: () => {
+				setStore({ contactToEdit: null });
 			}
 		}
 	};
